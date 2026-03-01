@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply font-sans antialiased;
+  }
+  
+  /* Dashboard Layout Fixes */
+  .dashboard-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  }
+  
+  .dashboard-card {
+    @apply bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200;
+  }
+  
+  /* User Profile Fixes */
+  .user-info-card {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-lg shadow-lg;
+  }
+  
+  .analytics-section {
+    @apply bg-white rounded-lg shadow-md p-6 mt-6;
+  }
+  
+  /* Activity Feed Fixes */
+  .activity-item {
+    @apply flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200;
+  }
+  
+  .activity-content {
+    @apply flex-1 min-w-0;
+  }
+  
+  /* Top Performers Fixes */
+  .performer-card {
+    @apply flex items-center justify-between p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200;
+  }
+  
+  .performer-avatar {
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md;
+  }
+  
+  /* Subject Performance Fixes */
+  .subject-card {
+    @apply bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200;
+  }
+  
+  .progress-bar {
+    @apply bg-gray-200 rounded-full h-2 overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply bg-indigo-600 h-full rounded-full transition-all duration-300;
+  }
+  
+  /* Responsive Fixes */
+  @media (max-width: 768px) {
+    .dashboard-grid {
+      @apply grid-cols-1 gap-4;
+    }
+    
+    .performer-card {
+      @apply flex-col items-center text-center p-3;
+    }
+    
+    .activity-item {
+      @apply flex-col space-y-2;
+    }
+  }
+  
+  /* Z-index and Positioning Fixes */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full z-50;
+  }
+  
+  .main-content {
+    @apply ml-0 md:ml-64 lg:ml-64 transition-all duration-300;
+  }
+  
+  .user-dropdown {
+    @apply absolute right-4 top-16 z-50 w-80 bg-white rounded-lg shadow-xl border border-gray-200;
+  }
+  
+  /* Overlap Prevention */
+  .metric-card {
+    @apply relative z-10;
+  }
+  
+  .activity-feed {
+    @apply relative z-10;
+  }
+  
+  .performers-list {
+    @apply relative z-10;
+  }
+  
+  /* Animation Fixes */
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
