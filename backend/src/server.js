@@ -3,9 +3,14 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const connectDB = require("./config/database");
+const authRoutes = require("./routes/auth");
 const aiQuiz = require("../routes/aiQuiz");
 
 dotenv.config();
+
+// Connect to database
+connectDB();
 
 const app = express();
 const server = http.createServer(app);
@@ -13,14 +18,17 @@ const server = http.createServer(app);
 // Socket.io setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Vite default port
+    origin: ["http://localhost:3000", "http://localhost:5173"],
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", "http://localhost:5173"],
+  credentials: true
+}));
 app.use(express.json());
 
 // Basic route
@@ -28,11 +36,17 @@ app.get("/", (req, res) => {
   res.send("SCIO Backend Server is running 🚀");
 });
 
+// Auth routes
+app.use("/api/auth", authRoutes);
+
 // AI Quiz route
 app.use("/api", aiQuiz);
 
 // Store active rooms
 const activeRooms = new Map();
+
+// Store quiz state for each room
+const roomQuizStates = new Map();
 
 // Socket.io connection handling
 io.on("connection", (socket) => {
@@ -57,6 +71,10 @@ io.on("connection", (socket) => {
 
     // Join host to room
     socket.join(roomData.id);
+    
+    // Store custom session ID in socket for host
+    socket.sessionId = roomData.host.id;
+    socket.role = roomData.host.role;
     
     // Send success response
     socket.emit("room-created", {
@@ -100,6 +118,10 @@ io.on("connection", (socket) => {
       activeRooms.set(roomCode, updatedRoom);
       socket.join(roomCode);
 
+      // Store custom session ID in socket
+      socket.sessionId = userData.id;
+      socket.role = userData.role;
+
       // Notify all participants about the update
       io.to(roomCode).emit("participant-updated", {
         roomCode,
@@ -125,6 +147,10 @@ io.on("connection", (socket) => {
     
     activeRooms.set(roomCode, updatedRoom);
     socket.join(roomCode);
+
+    // Store custom session ID in socket
+    socket.sessionId = userData.id;
+    socket.role = userData.role;
 
     // Notify all participants in room
     io.to(roomCode).emit("participant-joined", {
@@ -174,21 +200,48 @@ io.on("connection", (socket) => {
   });
 
   // Start quiz
-  socket.on("start-quiz", ({ roomCode, quizData }) => {
+  socket.on("start-quiz", ({ roomCode, quizData, currentQuestion, timeRemaining }) => {
     console.log(`Starting quiz in room: ${roomCode}`);
+    console.log("Quiz data received:", quizData);
+    console.log("Current question:", currentQuestion);
+    console.log("Time remaining:", timeRemaining);
     
     const room = activeRooms.get(roomCode);
     if (!room) {
+      console.log("❌ Room not found:", roomCode);
       socket.emit("room-error", { message: "Room not found" });
       return;
     }
 
-    // Check if user is host
-    const host = room.participants.find(p => p.role === 'host');
-    if (!host || host.id !== socket.id) {
+    console.log("✅ Room found:", room.id);
+    console.log("👥 Room participants:", room.participants.map(p => ({ id: p.id, name: p.name, role: p.role })));
+    
+    // Debug: Check socket session ID vs room host ID
+    console.log("🔍 Socket session ID:", socket.sessionId);
+    console.log("🔍 Room host ID:", room.hostId);
+
+    // Check if user is host using session ID, NOT socket.id
+    const user = room.participants.find(p => p.id === socket.sessionId);
+    if (!user || user.role !== 'host') {
+      console.log("❌ Only host can start the quiz");
+      console.log("❌ User found:", !!user);
+      console.log("❌ User role:", user?.role);
       socket.emit("room-error", { message: "Only host can start the quiz" });
       return;
     }
+
+    console.log("✅ Host verified:", user.name);
+
+    // Initialize quiz state for this room
+    const quizState = {
+      currentQuestionIndex: 0,
+      timeRemaining: timeRemaining || 30,
+      answers: [],
+      isActive: true,
+      timerInterval: null
+    };
+    
+    roomQuizStates.set(roomCode, quizState);
 
     // Update room status
     const updatedRoom = {
@@ -200,54 +253,255 @@ io.on("connection", (socket) => {
     
     activeRooms.set(roomCode, updatedRoom);
 
-    // Notify all participants
-    io.to(roomCode).emit("quiz-started", {
+    // Start timer for this room
+    startQuizTimer(roomCode);
+
+    // Notify all participants with current question
+    console.log("📡 Broadcasting quiz-started event to room:", roomCode);
+    console.log("👥 Socket rooms before emission:", io.sockets.adapter.rooms);
+    console.log("👥 Room participants:", room.participants);
+    
+    const quizEventData = {
       roomCode,
-      quiz: quizData
+      quiz: quizData,
+      currentQuestion: currentQuestion || quizData.questions[0],
+      questionIndex: 0,
+      timeRemaining: timeRemaining || 30
+    };
+
+    // Broadcast to ALL participants in the room (not just host)
+    io.to(roomCode).emit("quiz-started", quizEventData);
+    
+    console.log("📡 Quiz-started event emitted to room:", roomCode);
+    console.log("📡 Event data:", quizEventData);
+    
+    // Verify emission
+    setTimeout(() => {
+      console.log("👥 Socket rooms after emission:", io.sockets.adapter.rooms);
+    }, 100);
+
+    console.log(`✅ Quiz started in room ${roomCode}`);
+  });
+
+  // Next question
+  socket.on("next-question", ({ roomCode, question, questionIndex, timeRemaining }) => {
+    console.log(`Next question in room: ${roomCode}`);
+    
+    const room = activeRooms.get(roomCode);
+    if (!room) {
+      socket.emit("room-error", { message: "Room not found" });
+      return;
+    }
+
+    // Check if user is host
+    const host = room.participants.find(p => p.role === 'host');
+    if (!host || host.id !== socket.id) {
+      socket.emit("room-error", { message: "Only host can move to next question" });
+      return;
+    }
+
+    // Update quiz state
+    const quizState = roomQuizStates.get(roomCode);
+    if (quizState) {
+      quizState.currentQuestionIndex = questionIndex;
+      quizState.timeRemaining = timeRemaining || 30;
+      quizState.answers = []; // Reset answers for new question
+    }
+
+    // Clear existing timer
+    if (quizState && quizState.timerInterval) {
+      clearInterval(quizState.timerInterval);
+    }
+
+    // Start new timer
+    startQuizTimer(roomCode);
+
+    // Notify all participants
+    io.to(roomCode).emit("next-question", {
+      roomCode,
+      question,
+      questionIndex,
+      timeRemaining: timeRemaining || 30
     });
 
-    console.log(`Quiz started in room ${roomCode}`);
+    console.log(`Next question sent to room ${roomCode}`);
   });
 
   // Submit answer
-  socket.on("submit-answer", ({ roomCode, answerData }) => {
-    console.log(`Answer submitted in room: ${roomCode}`);
+  socket.on("submit-answer", ({ roomCode, questionIndex, selectedAnswer, correctAnswer, userId, userName, timestamp }) => {
+    console.log(`Answer submitted in room: ${roomCode} by ${userName}`);
     
     const room = activeRooms.get(roomCode);
     if (!room) return;
 
-    // Find participant
-    const participant = room.participants.find(p => p.id === answerData.participantId);
-    if (!participant) return;
+    const quizState = roomQuizStates.get(roomCode);
+    if (!quizState) return;
 
-    // Update participant's answers
-    participant.answers.push({
-      questionId: answerData.questionId,
-      answer: answerData.answer,
-      timeTaken: answerData.timeTaken,
-      submittedAt: new Date().toISOString()
-    });
-
-    // Calculate if answer is correct
-    const question = room.quiz?.questions?.find(q => q.id === answerData.questionId);
-    const isCorrect = question && question.correctAnswer === answerData.answer;
-
-    if (isCorrect) {
-      participant.score = (participant.score || 0) + 1;
+    // Check if already answered this question
+    const existingAnswer = quizState.answers.find(a => a.userId === userId && a.questionIndex === questionIndex);
+    if (existingAnswer) {
+      console.log(`User ${userName} already answered question ${questionIndex}`);
+      return;
     }
 
-    // Update room
-    activeRooms.set(roomCode, room);
+    // Add answer to quiz state
+    const answerData = {
+      userId,
+      userName,
+      questionIndex,
+      selectedAnswer,
+      correctAnswer,
+      timestamp,
+      isCorrect: selectedAnswer === correctAnswer
+    };
 
-    // Send confirmation to participant
-    socket.emit("answer-submitted", {
+    quizState.answers.push(answerData);
+
+    // Notify host about answer submission
+    const host = room.participants.find(p => p.role === 'host');
+    if (host) {
+      io.to(host.id).emit("answer-submitted", {
+        roomCode,
+        answer: answerData
+      });
+    }
+
+    // Check if all participants have answered (excluding host)
+    const participantCount = room.participants.filter(p => p.role !== 'host').length;
+    const answeredCount = quizState.answers.filter(a => a.questionIndex === questionIndex).length;
+
+    console.log(`Answers for question ${questionIndex}: ${answeredCount}/${participantCount}`);
+
+    // If all participants have answered, move to next question
+    if (answeredCount >= participantCount) {
+      setTimeout(() => {
+        const nextIndex = questionIndex + 1;
+        const quizQuestions = room.quiz?.questions || [];
+        
+        if (nextIndex < quizQuestions.length) {
+          // Auto-move to next question
+          const nextQuestion = quizQuestions[nextIndex];
+          socket.emit("next-question", {
+            roomCode,
+            question: nextQuestion,
+            questionIndex: nextIndex,
+            timeRemaining: 30
+          });
+        } else {
+          // Quiz completed
+          socket.emit("quiz-completed", {
+            roomCode,
+            results: quizState.answers
+          });
+        }
+      }, 1000); // Small delay to show final answer
+    }
+
+    console.log(`Answer submitted by ${userName}: ${answerData.isCorrect ? 'Correct' : 'Wrong'}`);
+  });
+
+  // Quiz completed
+  socket.on("quiz-completed", ({ roomCode, results }) => {
+    console.log(`Quiz completed in room: ${roomCode}`);
+    
+    const room = activeRooms.get(roomCode);
+    if (!room) return;
+
+    // Check if user is host
+    const host = room.participants.find(p => p.role === 'host');
+    if (!host || host.id !== socket.id) {
+      socket.emit("room-error", { message: "Only host can complete the quiz" });
+      return;
+    }
+
+    // Clear quiz state
+    const quizState = roomQuizStates.get(roomCode);
+    if (quizState && quizState.timerInterval) {
+      clearInterval(quizState.timerInterval);
+    }
+    roomQuizStates.delete(roomCode);
+
+    // Update room status
+    const updatedRoom = {
+      ...room,
+      status: 'completed',
+      completedAt: new Date().toISOString()
+    };
+    
+    activeRooms.set(roomCode, updatedRoom);
+
+    // Notify all participants
+    io.to(roomCode).emit("quiz-completed", {
       roomCode,
-      participantId: answerData.participantId,
-      correct: isCorrect
+      results
     });
 
-    console.log(`Answer submitted by ${answerData.participantId}: ${isCorrect ? 'Correct' : 'Wrong'}`);
+    console.log(`Quiz completed in room ${roomCode}`);
   });
+
+  // Timer update
+  socket.on("timer-update", ({ roomCode, timeRemaining }) => {
+    const quizState = roomQuizStates.get(roomCode);
+    if (quizState) {
+      quizState.timeRemaining = timeRemaining;
+    }
+
+    // Broadcast to all participants
+    io.to(roomCode).emit("timer-sync", {
+      roomCode,
+      timeRemaining
+    });
+  });
+
+  // Helper function to start quiz timer
+  function startQuizTimer(roomCode) {
+    const quizState = roomQuizStates.get(roomCode);
+    if (!quizState) return;
+
+    // Clear any existing timer
+    if (quizState.timerInterval) {
+      clearInterval(quizState.timerInterval);
+    }
+
+    // Start new timer
+    quizState.timerInterval = setInterval(() => {
+      quizState.timeRemaining--;
+
+      // Broadcast timer update to all participants
+      io.to(roomCode).emit("timer-sync", {
+        roomCode,
+        timeRemaining: quizState.timeRemaining
+      });
+
+      // Check if time is up
+      if (quizState.timeRemaining <= 0) {
+        clearInterval(quizState.timerInterval);
+        quizState.timerInterval = null;
+
+        // Auto-move to next question or complete quiz
+        const room = activeRooms.get(roomCode);
+        if (room) {
+          const nextIndex = quizState.currentQuestionIndex + 1;
+          const quizQuestions = room.quiz?.questions || [];
+          
+          if (nextIndex < quizQuestions.length) {
+            const nextQuestion = quizQuestions[nextIndex];
+            io.to(roomCode).emit("next-question", {
+              roomCode,
+              question: nextQuestion,
+              questionIndex: nextIndex,
+              timeRemaining: 30
+            });
+          } else {
+            io.to(roomCode).emit("quiz-completed", {
+              roomCode,
+              results: quizState.answers
+            });
+          }
+        }
+      }
+    }, 1000);
+  }
 
   // Send chat message
   socket.on("send-message", ({ roomCode, messageData }) => {
