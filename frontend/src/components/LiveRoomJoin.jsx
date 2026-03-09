@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import socket from "../socket";
 import RoomManager from "../utils/roomManager";
+import RoomChat from "./RoomChat";
 
 const LiveRoomJoin = () => {
   const navigate = useNavigate();
@@ -17,9 +18,7 @@ const LiveRoomJoin = () => {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [timeRemaining, setTimeRemaining] = useState(30);
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
-  const lastQuestionTimeRef = useRef(0);
   const [forceUpdate, setForceUpdate] = useState(0);
 
   // Get current user from localStorage
@@ -155,7 +154,6 @@ const LiveRoomJoin = () => {
         setQuizActive(true);
         setCurrentQuestion(data.currentQuestion);
         setCurrentQuestionIndex(0);
-        setTimeRemaining(data.timeRemaining);
         setSelectedAnswer(null);
         setAnswerSubmitted(false);
         setForceUpdate((prev) => prev + 1); // Force re-render
@@ -184,10 +182,6 @@ const LiveRoomJoin = () => {
         console.log("✅ Setting next question for room:", room.id);
         setCurrentQuestion(data.question);
         setCurrentQuestionIndex(data.questionIndex);
-        const newTimestamp = Date.now();
-        console.log("🕐 Setting lastQuestionTime to:", newTimestamp);
-        lastQuestionTimeRef.current = newTimestamp; // Set ref for immediate access
-        setTimeRemaining(30); // Reset timer to 30 seconds for each question
         setSelectedAnswer(null);
         setAnswerSubmitted(false);
       }
@@ -501,120 +495,96 @@ const LiveRoomJoin = () => {
             animate={{ opacity: 1, y: 0 }}
             className="grid lg:grid-cols-12 gap-12"
           >
-            <div className="lg:col-span-4 space-y-8">
-              {/* User Info */}
-              <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                  Node_Identity
-                </h3>
+            <div className="lg:col-span-7 space-y-8">
+              <div className="grid sm:grid-cols-2 gap-8">
+                {/* User Info */}
+                <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
+                    Node_Identity
+                  </h3>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Operator_Name
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {getCurrentUser()?.name}
-                    </span>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Operator_Name
+                      </span>
+                      <span className="text-sm font-bold text-slate-900">
+                        {getCurrentUser()?.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Access_Level
+                      </span>
+                      <span className="text-sm font-bold text-indigo-600">
+                        {getCurrentUser()?.role || "PARTICIPANT"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Connection_Status
+                      </span>
+                      <span className="text-sm font-bold text-green-600">
+                        CONNECTED
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Access_Level
-                    </span>
-                    <span className="text-sm font-bold text-indigo-600">
-                      {getCurrentUser()?.role || "PARTICIPANT"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-3">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Connection_Status
-                    </span>
-                    <span className="text-sm font-bold text-green-600">
-                      CONNECTED
-                    </span>
+                </div>
+
+                {/* Room Info */}
+                <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
+                    Cluster_Data
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Session_Name
+                      </span>
+                      <span className="text-sm font-bold text-slate-900">
+                        {room.name || "LIVE_SESSION"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Access_Code
+                      </span>
+                      <span className="text-sm font-mono font-bold text-indigo-600">
+                        {room.id}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Status
+                      </span>
+                      <span
+                        className={`text-sm font-bold ${getRoomStatusColor()}`}
+                      >
+                        {room.status === "waiting"
+                          ? "AWAITING_HOST"
+                          : room.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Host_Node
+                      </span>
+                      <span className="text-sm font-bold text-slate-900">
+                        {RoomManager.getHost(room.participants)?.name ||
+                          "UNKNOWN"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="lg:col-span-4 space-y-8">
-              {/* Room Info */}
-              <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                  Cluster_Data
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Session_Name
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {room.name || "LIVE_SESSION"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Access_Code
-                    </span>
-                    <span className="text-sm font-mono font-bold text-indigo-600">
-                      {room.id}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Status
-                    </span>
-                    <span
-                      className={`text-sm font-bold ${getRoomStatusColor()}`}
-                    >
-                      {room.status === "waiting"
-                        ? "AWAITING_HOST"
-                        : room.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-3">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Host_Node
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {RoomManager.getHost(room.participants)?.name ||
-                        "UNKNOWN"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quiz Interface - Full Width when active */}
-            {quizActive && currentQuestion ? (
-              <div className="lg:col-span-12">
+              {/* Quiz Interface */}
+              {quizActive && currentQuestion && (
                 <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
                   <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
                     Assessment_Protocol_Active
                   </h3>
-
-                  {/* Timer */}
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Time_Remaining
-                      </span>
-                      <span
-                        className={`text-2xl font-bold ${timeRemaining <= 10 ? "text-red-600" : "text-indigo-600"}`}
-                      >
-                        {timeRemaining}s
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-1000 ${
-                          timeRemaining <= 10 ? "bg-red-600" : "bg-indigo-600"
-                        }`}
-                        style={{ width: `${(timeRemaining / 30) * 100}%` }}
-                      />
-                    </div>
-                  </div>
 
                   {/* Current Question */}
                   <div className="space-y-4">
@@ -689,94 +659,61 @@ const LiveRoomJoin = () => {
                     )}
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="lg:col-span-4 space-y-8">
-                {/* Room Info */}
-                <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                    Cluster_Data
-                  </h3>
+              )}
+            </div>
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Session_Name
-                      </span>
-                      <span className="text-sm font-bold text-slate-900">
-                        {room.name || "LIVE_SESSION"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Access_Code
-                      </span>
-                      <span className="text-sm font-mono font-bold text-indigo-600">
-                        {room.id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Status
-                      </span>
-                      <span
-                        className={`text-sm font-bold ${getRoomStatusColor()}`}
-                      >
-                        {room.status === "waiting"
-                          ? "AWAITING_HOST"
-                          : room.status.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Host_Node
-                      </span>
-                      <span className="text-sm font-bold text-slate-900">
-                        {RoomManager.getHost(room.participants)?.name ||
-                          "UNKNOWN"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="lg:col-span-5 space-y-8">
+              {/* Participants */}
+              <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
+                  Connected_Nodes
+                </h3>
 
-            {/* Participants - Show when quiz is not active */}
-            {!quizActive && (
-              <div className="lg:col-span-4 space-y-8">
-                <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                    Connected_Nodes
-                  </h3>
-
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {room.participants?.map((participant) => (
-                      <div
-                        key={participant.id}
-                        className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-indigo-100 flex items-center justify-center">
-                            <span className="text-indigo-600 font-black text-sm">
-                              {participant.name?.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">
-                              {participant.name}
-                            </p>
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                              {participant.role}
-                            </p>
-                          </div>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {room.participants?.map((participant) => (
+                    <div
+                      key={participant.id}
+                      className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-indigo-100 flex items-center justify-center">
+                          <span className="text-indigo-600 font-black text-sm">
+                            {participant.name?.charAt(0).toUpperCase()}
+                          </span>
                         </div>
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">
+                            {participant.name}
+                          </p>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                            {participant.role}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                      <span
+                        className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded ${
+                          participant.status === "online"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {participant.status || "online"}
+                      </span>
+                    </div>
+                  ))}
+                  {(!room.participants || room.participants.length === 0) && (
+                    <p className="text-sm text-slate-500 italic">
+                      No participants connected
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
+
+              {/* Chat Interface */}
+              <div className="h-96">
+                <RoomChat roomCode={room.id} currentUser={getCurrentUser()} />
+              </div>
+            </div>
           </motion.div>
         </div>
       </main>

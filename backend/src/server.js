@@ -4,8 +4,7 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database");
-const authRoutes = require("./routes/auth");
-const aiQuiz = require("../routes/aiQuiz");
+const appRoutes = require("./routes/appRoutes");
 
 dotenv.config();
 
@@ -36,11 +35,9 @@ app.get("/", (req, res) => {
   res.send("SCIO Backend Server is running 🚀");
 });
 
-// Auth routes
-app.use("/api/auth", authRoutes);
+// Centralized app routes
+app.use("/api", appRoutes);
 
-// AI Quiz route
-app.use("/api", aiQuiz);
 
 // Store active rooms
 const activeRooms = new Map();
@@ -177,7 +174,7 @@ io.on("connection", (socket) => {
     // Remove participant from room
     const updatedRoom = {
       ...room,
-      participants: room.participants.filter(p => p.id !== socket.id)
+      participants: room.participants.filter(p => p.id !== socket.sessionId)
     };
     
     if (updatedRoom.participants.length === 0) {
@@ -192,7 +189,7 @@ io.on("connection", (socket) => {
     // Notify remaining participants
     io.to(roomCode).emit("participant-left", {
       roomCode,
-      participantId: socket.id
+      participantId: socket.sessionId
     });
 
     socket.emit("room-left", { success: true });
@@ -295,7 +292,7 @@ io.on("connection", (socket) => {
 
     // Check if user is host
     const host = room.participants.find(p => p.role === 'host');
-    if (!host || host.id !== socket.id) {
+    if (!host || host.id !== socket.sessionId) {
       socket.emit("room-error", { message: "Only host can move to next question" });
       return;
     }
@@ -372,29 +369,9 @@ io.on("connection", (socket) => {
 
     console.log(`Answers for question ${questionIndex}: ${answeredCount}/${participantCount}`);
 
-    // If all participants have answered, move to next question
+    // If all participants have answered, we could notify the host but we will not auto-advance
     if (answeredCount >= participantCount) {
-      setTimeout(() => {
-        const nextIndex = questionIndex + 1;
-        const quizQuestions = room.quiz?.questions || [];
-        
-        if (nextIndex < quizQuestions.length) {
-          // Auto-move to next question
-          const nextQuestion = quizQuestions[nextIndex];
-          socket.emit("next-question", {
-            roomCode,
-            question: nextQuestion,
-            questionIndex: nextIndex,
-            timeRemaining: 30
-          });
-        } else {
-          // Quiz completed
-          socket.emit("quiz-completed", {
-            roomCode,
-            results: quizState.answers
-          });
-        }
-      }, 1000); // Small delay to show final answer
+      console.log(`All participants answered for question ${questionIndex}`);
     }
 
     console.log(`Answer submitted by ${userName}: ${answerData.isCorrect ? 'Correct' : 'Wrong'}`);
@@ -409,7 +386,7 @@ io.on("connection", (socket) => {
 
     // Check if user is host
     const host = room.participants.find(p => p.role === 'host');
-    if (!host || host.id !== socket.id) {
+    if (!host || host.id !== socket.sessionId) {
       socket.emit("room-error", { message: "Only host can complete the quiz" });
       return;
     }
@@ -477,28 +454,7 @@ io.on("connection", (socket) => {
       if (quizState.timeRemaining <= 0) {
         clearInterval(quizState.timerInterval);
         quizState.timerInterval = null;
-
-        // Auto-move to next question or complete quiz
-        const room = activeRooms.get(roomCode);
-        if (room) {
-          const nextIndex = quizState.currentQuestionIndex + 1;
-          const quizQuestions = room.quiz?.questions || [];
-          
-          if (nextIndex < quizQuestions.length) {
-            const nextQuestion = quizQuestions[nextIndex];
-            io.to(roomCode).emit("next-question", {
-              roomCode,
-              question: nextQuestion,
-              questionIndex: nextIndex,
-              timeRemaining: 30
-            });
-          } else {
-            io.to(roomCode).emit("quiz-completed", {
-              roomCode,
-              results: quizState.answers
-            });
-          }
-        }
+        // Auto-move has been disabled to allow host control
       }
     }, 1000);
   }
@@ -514,7 +470,7 @@ io.on("connection", (socket) => {
     }
 
     // Verify user is in room
-    const participant = room.participants.find(p => p.id === messageData.userId);
+    const participant = room.participants.find(p => p.id === socket.sessionId || p.originalUserId === messageData.userId);
     if (!participant) {
       socket.emit("room-error", { message: "You are not in this room" });
       return;
@@ -576,13 +532,13 @@ io.on("connection", (socket) => {
     const room = activeRooms.get(roomCode);
     if (!room) return;
 
-    const participant = room.participants.find(p => p.id === socket.id);
+    const participant = room.participants.find(p => p.id === socket.sessionId);
     if (!participant) return;
 
     // Notify other participants that someone is typing
     socket.to(roomCode).emit("user-typing", {
       roomCode,
-      userId: socket.id,
+      userId: socket.sessionId || socket.id,
       userName: participant.name
     });
   });
@@ -594,7 +550,7 @@ io.on("connection", (socket) => {
     // Notify other participants that typing stopped
     socket.to(roomCode).emit("user-stop-typing", {
       roomCode,
-      userId: socket.id
+      userId: socket.sessionId || socket.id
     });
   });
 
@@ -604,11 +560,11 @@ io.on("connection", (socket) => {
     
     // Find and remove user from all rooms
     for (const [roomCode, room] of activeRooms.entries()) {
-      const participantIndex = room.participants.findIndex(p => p.id === socket.id);
+      const participantIndex = room.participants.findIndex(p => p.id === socket.sessionId);
       if (participantIndex !== -1) {
         const updatedRoom = {
           ...room,
-          participants: room.participants.filter(p => p.id !== socket.id)
+          participants: room.participants.filter(p => p.id !== socket.sessionId)
         };
         
         if (updatedRoom.participants.length === 0) {
@@ -620,7 +576,7 @@ io.on("connection", (socket) => {
         // Notify remaining participants
         io.to(roomCode).emit("participant-left", {
           roomCode,
-          participantId: socket.id
+          participantId: socket.sessionId
         });
         
         break;

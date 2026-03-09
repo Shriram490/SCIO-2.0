@@ -19,7 +19,7 @@ const Hero = () => {
 
       <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-indigo-50/30 to-transparent pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-8 ">
         <div className="grid lg:grid-cols-12 gap-16 items-center">
           {/* LEFT SIDE: Content (Professional & Sharp) */}
           <div className="lg:col-span-6 text-left border-l-2 border-indigo-600/20 pl-8 py-4">
@@ -105,8 +105,8 @@ const Hero = () => {
               className="relative w-full max-w-[500px]"
             >
               {/* Sharp Edge Frame for the Visual */}
-              <div className="relative bg-white p-2 border border-slate-200 shadow-2xl rounded-xl overflow-hidden w-[600px]">
-                <div className="bg-slate-50 flex items-center justify-center border border-slate-100">
+              <div className="relative bg-white p-0 shadow-2xl rounded-[1.5vw] overflow-hidden w-[40vw]">
+                <div className="bg-slate-50 flex items-center justify-center  ">
                   <video
                     src={skategirl}
                     autoPlay

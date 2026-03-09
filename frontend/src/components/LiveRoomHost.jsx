@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import socket from "../socket";
 import RoomManager from "../utils/roomManager";
+import RoomChat from "./RoomChat";
 
 const LiveRoomHost = () => {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ const LiveRoomHost = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [quizResults, setQuizResults] = useState([]);
+  const [timerEnabled, setTimerEnabled] = useState(true);
+  const [currentQuestionResponses, setCurrentQuestionResponses] = useState(0);
 
   // Static quiz questions
   const quizQuestions = [
@@ -31,6 +34,7 @@ const LiveRoomHost = () => {
       question: "What is the correct semantic tag for navigation links?",
       options: ["<div>", "<nav>", "<section>", "<aside>"],
       correct: 1,
+      timeLimit: 30
     },
     {
       id: 2,
@@ -43,6 +47,7 @@ const LiveRoomHost = () => {
         'newtab="true"',
       ],
       correct: 2,
+      timeLimit: 30
     },
     {
       id: 3,
@@ -55,6 +60,7 @@ const LiveRoomHost = () => {
         "Aligns element to parent center",
       ],
       correct: 1,
+      timeLimit: 30
     },
     {
       id: 4,
@@ -62,6 +68,7 @@ const LiveRoomHost = () => {
       question: "Which CSS property is used to make a website responsive?",
       options: ["float", "media queries", "z-index", "display: block"],
       correct: 1,
+      timeLimit: 30
     },
     {
       id: 5,
@@ -74,13 +81,15 @@ const LiveRoomHost = () => {
         "Moves element to top",
       ],
       correct: 1,
+      timeLimit: 30
     },
     {
       id: 6,
       section: "JavaScript",
-      question: "What is the output?\n\nconsole.log(typeof null);",
+      question: "What is output?\n\nconsole.log(typeof null);",
       options: ['"null"', '"object"', '"undefined"', '"string"'],
       correct: 1,
+      timeLimit: 30
     },
     {
       id: 7,
@@ -93,6 +102,7 @@ const LiveRoomHost = () => {
         "JSON.object()",
       ],
       correct: 1,
+      timeLimit: 30
     },
     {
       id: 8,
@@ -266,7 +276,7 @@ const LiveRoomHost = () => {
 
   // Timer effect for quiz questions - Host controls timer locally
   useEffect(() => {
-    if (!quizActive) return;
+    if (!quizActive || !timerEnabled) return;
 
     if (timeRemaining <= 0) {
       handleNextQuestion();
@@ -288,14 +298,19 @@ const LiveRoomHost = () => {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [quizActive, timeRemaining, room]);
+  }, [quizActive, timeRemaining, room, timerEnabled]);
 
   const handleNextQuestion = () => {
     const nextIndex = currentQuestionIndex + 1;
 
     if (nextIndex < quizQuestions.length) {
+      // Disable timer during transition
+      setTimerEnabled(false);
+
       setCurrentQuestionIndex(nextIndex);
-      setTimeRemaining(30);
+
+      // Reset response counter for new question
+      setCurrentQuestionResponses(0);
 
       const nextQuestion = quizQuestions[nextIndex];
       socket.emit("next-question", {
@@ -304,9 +319,16 @@ const LiveRoomHost = () => {
         questionIndex: nextIndex,
         timeRemaining: 30,
       });
+
+      // Re-enable timer after transition
+      setTimeout(() => {
+        setTimeRemaining(30);
+        setTimerEnabled(true);
+      }, 100);
     } else {
       // Quiz completed
       setQuizActive(false);
+      setTimerEnabled(false);
       socket.emit("quiz-completed", {
         roomCode: room?.id,
         results: quizResults,
@@ -318,19 +340,24 @@ const LiveRoomHost = () => {
   useEffect(() => {
     socket.on("answer-submitted", (data) => {
       if (room && data.roomCode === room.id) {
-        // Track answers and check if all participants have answered
+        console.log("📥 Answer received:", data);
+        
+        // Simple response counter increment
+        setCurrentQuestionResponses(prev => prev + 1);
+        
+        // Add to results for tracking
         setQuizResults((prev) => [...prev, data.answer]);
 
-        // Check if all participants have answered current question
-        const participantCount = room.participants.length;
-        const answeredCount = quizResults.filter(
-          (r) => r.questionIndex === currentQuestionIndex,
-        ).length;
+        console.log("📊 Answer tracking:", {
+          questionIndex: currentQuestionIndex,
+          currentResponses: currentQuestionResponses + 1,
+          totalResults: quizResults.length + 1
+        });
 
-        if (answeredCount === participantCount - 1) {
-          // -1 because host doesn't answer
-          handleNextQuestion();
-        }
+        // REMOVED: Auto-move on first answer - WRONG
+        // if (answeredCount >= 1) {
+        //   handleNextQuestion();
+        // }
       }
     });
 
@@ -731,8 +758,8 @@ const LiveRoomHost = () => {
                     Assessment_Protocol_Active
                   </h3>
 
-                  {/* Timer */}
-                  <div className="mb-6">
+                  {/* Timer - HIDDEN */}
+                  <div className="hidden mb-6">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         Time_Remaining
@@ -811,14 +838,20 @@ const LiveRoomHost = () => {
                         Responses_Received
                       </span>
                       <span className="text-sm font-bold text-indigo-600">
-                        {
-                          quizResults.filter(
-                            (r) => r.questionIndex === currentQuestionIndex,
-                          ).length
-                        }{" "}
+                        {currentQuestionResponses}{" "}
                         / {room.participants.length - 1}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Host Control - Next Question Button */}
+                  <div className="mt-6">
+                    <button
+                      onClick={handleNextQuestion}
+                      className="w-full px-6 py-3 bg-indigo-600 text-white font-bold text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none"
+                    >
+                      Next Question →
+                    </button>
                   </div>
                 </div>
               )}
@@ -879,6 +912,11 @@ const LiveRoomHost = () => {
                   Initialize_Assessment
                 </button>
               )}
+
+              {/* Chat Interface */}
+              <div className="h-96">
+                <RoomChat roomCode={room.id} currentUser={getCurrentUser()} />
+              </div>
             </div>
           </motion.div>
         </div>

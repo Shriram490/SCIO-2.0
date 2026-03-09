@@ -29,7 +29,7 @@ const Login = () => {
         setError(response.message || "LOGIN_FAILED");
       }
     } catch (err) {
-      setError(err.message || "AUTH_CRITICAL: UPLINK_DENIED");
+      setError(err.message || "authentication: user invalid");
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ const Login = () => {
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
               New User?{" "}
               <Link to="/signin" className="text-indigo-600 hover:underline">
-                Register Node
+                Register 
               </Link>
             </p>
           </div>
@@ -110,7 +110,7 @@ const Login = () => {
                 href="#"
                 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800 transition-colors"
               >
-                Recover Key?
+                Forget Password ?
               </a>
             </div>
 
