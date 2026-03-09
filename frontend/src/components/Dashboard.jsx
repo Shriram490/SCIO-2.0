@@ -286,7 +286,7 @@ const Dashboard = () => {
                   ? "Dashboard"
                   : item === "host"
                     ? "Host_Session"
-                    : "Join_Uplink"}
+                    : "Join_Session"}
               </button>
             ))}
           </nav>

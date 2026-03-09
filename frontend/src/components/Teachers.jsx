@@ -66,7 +66,7 @@ const Teachers = () => {
                   whileHover={{ backgroundColor: '#f8fafc' }}
                   className="p-8 border-r border-b border-slate-200 transition-colors"
                 >
-                  <div className="text-[10px] font-black text-indigo-500 mb-4 tracking-widest">// {benefit.tag}</div>
+                  <div className="t=ext-[10px] font-black text-indigo-500 mb-4 tracking-widest">// {benefit.tag}</div>
                   <h3 className="text-lg font-bold text-slate-900 mb-3 uppercase tracking-tight">{benefit.title}</h3>
                   <p className="text-slate-500 text-sm leading-relaxed font-normal">{benefit.description}</p>
                 </motion.div>

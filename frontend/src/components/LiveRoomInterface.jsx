@@ -41,14 +41,28 @@ const LiveRoomInterface = () => {
         question: 'What is 2 + 2?',
         options: ['3', '4', '5', '6'],
         correctAnswer: 1,
-        timeLimit: 20
+        timeLimit: 30
       },
       {
         id: 3,
         question: 'Which planet is known as the Red Planet?',
         options: ['Venus', 'Mars', 'Jupiter', 'Saturn'],
         correctAnswer: 1,
-        timeLimit: 25
+        timeLimit: 30
+      },
+      {
+        id: 4,
+        question: 'What is the largest ocean on Earth?',
+        options: ['Atlantic', 'Indian', 'Arctic', 'Pacific'],
+        correctAnswer: 3,
+        timeLimit: 30
+      },
+      {
+        id: 5,
+        question: 'Who painted the Mona Lisa?',
+        options: ['Van Gogh', 'Da Vinci', 'Picasso', 'Rembrandt'],
+        correctAnswer: 1,
+        timeLimit: 30
       }
     ]
   };
@@ -84,11 +98,35 @@ const LiveRoomInterface = () => {
         socketService.onQuizStarted((data) => {
           if (data.roomCode === roomCode) {
             setQuizStarted(true);
-            setTimeRemaining(mockQuiz.questions[0].timeLimit);
+            setTimeRemaining(30); // Always start with 30 seconds
             setCurrentQuestion(0);
             setAnswerSubmitted(false);
             setSelectedAnswer(null);
-            sessionStorage.setItem('currentRoomCode', roomCode);
+            setUserScore(0);
+          }
+        });
+
+        // Listen for timer updates from host
+        socketService.on('timer-update', (data) => {
+          if (data.roomCode === roomCode) {
+            setTimeRemaining(data.timeRemaining);
+          }
+        });
+
+        // Listen for next question from host
+        socketService.on('next-question', (data) => {
+          if (data.roomCode === roomCode) {
+            setCurrentQuestion(data.questionIndex);
+            setTimeRemaining(30); // Reset to 30 seconds for each question
+            setAnswerSubmitted(false);
+            setSelectedAnswer(null);
+          }
+        });
+
+        // Listen for answer submission
+        socketService.onAnswerSubmitted((data) => {
+          if (data.roomCode === roomCode) {
+            console.log('Answer submitted:', data);
           }
         });
 
@@ -114,6 +152,8 @@ const LiveRoomInterface = () => {
 
     return () => {
       socketService.off('quiz-started');
+      socketService.off('timer-update');
+      socketService.off('next-question');
       socketService.off('answer-submitted');
       socketService.off('participant-joined');
       socketService.off('participant-left');
@@ -121,16 +161,57 @@ const LiveRoomInterface = () => {
     };
   }, [roomCode]);
 
-  // Timer effect
-  useEffect(() => {
-    if (timeRemaining > 0 && quizStarted && !answerSubmitted) {
-      const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timeRemaining === 0 && !answerSubmitted) {
-      // Auto-submit when time runs out
-      handleSubmitAnswer();
-    }
-  }, [timeRemaining, quizStarted, answerSubmitted]);
+  // Timer effect - REMOVED - Participants should NOT control timer
+  // useEffect(() => {
+  //   if (timeRemaining > 0 && quizStarted && !answerSubmitted) {
+  //     const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
+  //     return () => clearTimeout(timer);
+  //   } else if (timeRemaining === 0 && !answerSubmitted) {
+  //     // Case 2: Time expired - auto-submit and move to next question
+  //     handleSubmitAnswer();
+  //   }
+  // }, [timeRemaining, quizStarted, answerSubmitted]);
+
+  // Handle answer submission - ONLY submit, NO auto-move
+  const handleSubmitAnswer = () => {
+    const question = mockQuiz.questions[currentQuestion];
+    if (!question) return;
+
+    const isCorrect = selectedAnswer === question.correctAnswer;
+    
+    // Submit answer to backend
+    socketService.submitAnswer({
+      roomCode,
+      answerData: {
+        questionId: question.id,
+        answer: selectedAnswer,
+        correct: isCorrect,
+        timeTaken: 30 - timeRemaining // Always use 30 seconds as base
+      }
+    });
+
+    setAnswerSubmitted(true);
+    setUserScore(userScore + (isCorrect ? 1 : 0));
+
+    // REMOVED: Auto-move logic - Participants should NOT control question progression
+    // setTimeout(() => {
+    //   moveToNextQuestion();
+    // }, 1000);
+  };
+
+  // REMOVED: moveToNextQuestion - Participants should NOT control question progression
+  // const moveToNextQuestion = () => {
+  //   if (currentQuestion < mockQuiz.questions.length - 1) {
+  //     setCurrentQuestion(currentQuestion + 1);
+  //     setTimeRemaining(30); // Reset to 30 seconds for next question
+  //     setAnswerSubmitted(false);
+  //     setSelectedAnswer(null);
+  //   } else {
+  //     // Quiz completed
+  //     setQuizCompleted(true);
+  //     setQuizStarted(false);
+  //   }
+  // };
 
   // Handle answer selection
   const handleAnswerSelect = (answerIndex) => {
@@ -139,44 +220,39 @@ const LiveRoomInterface = () => {
     }
   };
 
-  // Handle answer submission
-  const handleSubmitAnswer = () => {
-    if (answerSubmitted) return;
-
-    const user = getCurrentUser();
-    const question = mockQuiz.questions[currentQuestion];
-    const isCorrect = selectedAnswer === question.correctAnswer;
-
-    // Submit answer via socket
-    socketService.submitAnswer(roomCode, {
-      participantId: user.id,
-      questionId: question.id,
-      answer: selectedAnswer,
-      correct: isCorrect,
-      timeTaken: question.timeLimit - timeRemaining
-    });
-
-    setAnswerSubmitted(true);
-  };
-
-  // Handle next question
-  const handleNextQuestion = () => {
-    if (currentQuestion < mockQuiz.questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-      setTimeRemaining(mockQuiz.questions[currentQuestion + 1].timeLimit);
-      setAnswerSubmitted(false);
-      setSelectedAnswer(null);
-    } else {
-      // Quiz completed
-      setQuizCompleted(true);
-    }
-  };
+  // REMOVED: handleNextQuestion - Participants should NOT control question progression
+  // const handleNextQuestion = () => {
+  //   if (currentQuestion < mockQuiz.questions.length - 1) {
+  //     setCurrentQuestion(currentQuestion + 1);
+  //     setTimeRemaining(30);
+  //     setAnswerSubmitted(false);
+  //     setSelectedAnswer(null);
+  //   } else {
+  //     // Quiz completed
+  //     setQuizCompleted(true);
+  //   }
+  // };
 
   // Handle leaving room
   const handleLeaveRoom = () => {
     socketService.leaveRoom(roomCode);
     sessionStorage.removeItem('currentRoomCode');
     navigate('/dashboard/live-control');
+  };
+
+  // Handle next question (for UI feedback only - actual control is by host)
+  const handleNextQuestion = () => {
+    // This is just for UI feedback - participants cannot actually control question flow
+    // The host controls the actual question progression
+    if (currentQuestion < mockQuiz.questions.length - 1) {
+      // Just update UI state for better user experience
+      // The actual question change will come from host via socket
+      setAnswerSubmitted(false);
+      setSelectedAnswer(null);
+    } else {
+      setQuizCompleted(true);
+      setQuizStarted(false);
+    }
   };
 
   // Format time display
@@ -328,11 +404,23 @@ const LiveRoomInterface = () => {
             <p className="text-gray-600">Question {currentQuestion + 1} of {mockQuiz.questions.length}</p>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Time Remaining</p>
-              <p className={`text-2xl font-bold ${timeRemaining < 10 ? 'text-red-600' : 'text-gray-900'}`}>
-                {formatTime(timeRemaining)}
-              </p>
+            <div className="hidden">
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Time Remaining</p>
+                <p className={`text-2xl font-bold ${timeRemaining < 10 ? 'text-red-600' : 'text-gray-900'}`}>
+                  {formatTime(timeRemaining)}
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-1000 ${
+                      timeRemaining < 10 ? 'bg-red-600' : 'bg-indigo-600'
+                    }`}
+                    style={{ width: `${(timeRemaining / 30) * 100}%` }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600">Score</p>
