@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if user already exists
+    // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -47,11 +47,35 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Generate username from email
+    let username = email.split('@')[0];
+    console.log('Generated username:', username);
+
+    // Clean up any existing users with null username
+    await User.deleteMany({ username: null });
+
+    // Ensure username is unique
+    let usernameExists = await User.findOne({ username });
+    console.log('Username exists:', !!usernameExists);
+
+    if (usernameExists) {
+      username = username + '_' + Date.now();
+      console.log('Updated username to unique:', username);
+    }
+
     // Create new user
     const user = new User({
       name,
+      username,
       email,
       password
+    });
+
+    console.log('User object before save:', {
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      hasPassword: !!user.password
     });
 
     console.log('Saving user to database...');
@@ -69,8 +93,11 @@ router.post('/register', async (req, res) => {
         user: {
           id: user._id,
           name: user.name,
+          username: user.username,
           email: user.email,
           role: user.role,
+          bio: user.bio,
+          profileUrl: user.profileUrl,
           isActive: user.isActive,
           isVerified: user.isVerified,
           createdAt: user.createdAt
@@ -155,8 +182,11 @@ router.post('/login', async (req, res) => {
         user: {
           id: user._id,
           name: user.name,
+          username: user.username,
           email: user.email,
           role: user.role,
+          bio: user.bio,
+          profileUrl: user.profileUrl,
           isActive: user.isActive,
           isVerified: user.isVerified,
           lastLoginAt: user.lastLoginAt
@@ -189,6 +219,49 @@ router.get('/me', auth, async (req, res) => {
       success: false,
       message: 'Server error fetching user data'
     });
+  }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { name, email, bio, profileUrl } = req.body;
+    
+    // Find user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Update fields
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (bio !== undefined) user.bio = bio;
+    if (profileUrl !== undefined) user.profileUrl = profileUrl;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          bio: user.bio,
+          profileUrl: user.profileUrl,
+          isActive: user.isActive,
+          isVerified: user.isVerified
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ success: false, message: 'Server error during profile update' });
   }
 });
 

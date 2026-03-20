@@ -15,6 +15,7 @@ import Signin from "./components/Signin";
 import Dashboard from "./components/Dashboard";
 import LiveRoomHost from "./components/LiveRoomHost";
 import LiveRoomJoin from "./components/LiveRoomJoin";
+import EditProfile from "./components/EditProfile";
 import socket from "./socket";
 
 // Protected Route component
@@ -60,6 +61,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfile />
               </ProtectedRoute>
             }
           />

@@ -9,9 +9,9 @@ const DashboardOverview = () => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-slate-200 bg-white">
       {[
         { label: "Active_Sessions", value: "003", unit: "live" },
-        { label: "Total_Users", value: "042", unit: "nodes" },
+        { label: "Total_Users", value: "042", unit: "students" },
         { label: "System_Uptime", value: "99.8", unit: "%" },
-        { label: "Data_Packets", value: "1.2M", unit: "trans" },
+        { label: "Answers_Submitted", value: "1.2M", unit: "total" },
       ].map((stat, i) => (
         <div
           key={i}
@@ -41,7 +41,7 @@ const DashboardOverview = () => (
           {[
             {
               label: "Create_New_Session",
-              desc: "Initialize a new live assessment room",
+              desc: "Start a new live assessment room",
               type: "create",
             },
             {
@@ -79,13 +79,13 @@ const DashboardOverview = () => (
 
       <div className="space-y-6">
         <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">
-          System_Monitor
+          System_Overview
         </h3>
         <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
           <div className="relative z-10 space-y-6">
             <div className="flex justify-between items-center">
               <p className="text-[10px] font-black tracking-[0.4em] text-indigo-400">
-                CORE_TELEMETRY
+                SYSTEM_INFO
               </p>
               <div className="flex gap-1">
                 {[1, 2, 3].map((i) => (
@@ -136,7 +136,7 @@ const LiveRoomHost = () => (
     <div className="lg:col-span-7 space-y-8">
       <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
         <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-          Initialize_New_Session
+          Start_New_Session
         </h3>
         <div className="space-y-4">
           <input
@@ -145,16 +145,16 @@ const LiveRoomHost = () => (
             className="w-full bg-slate-50 border border-slate-200 p-4 text-xs font-bold tracking-widest focus:outline-none focus:border-indigo-600 transition-all"
           />
           <button className="w-full py-4 bg-slate-900 text-white font-bold text-sm uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none">
-            Deploy Host Protocol
+            Host Session
           </button>
         </div>
       </div>
       <div className="border-l-2 border-slate-200 pl-8">
         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-          Active_Registry
+          Active_Sessions
         </h4>
         <p className="text-xs text-slate-500 italic">
-          No active rooms detected in local cluster...
+          No active rooms detected...
         </p>
       </div>
     </div>
@@ -162,7 +162,7 @@ const LiveRoomHost = () => (
       <div className="bg-slate-900 p-8 text-white relative overflow-hidden h-full min-h-[300px]">
         <div className="relative z-10 flex flex-col h-full justify-between">
           <p className="text-[10px] font-black tracking-[0.4em] text-indigo-400">
-            HOST_TELEMETRY
+            HOST_SYSTEM_INFO
           </p>
           <div className="space-y-2">
             <div className="flex justify-between text-[10px] font-mono border-b border-white/10 pb-2">
@@ -170,7 +170,7 @@ const LiveRoomHost = () => (
               <span className="text-indigo-400">0.02%</span>
             </div>
             <div className="flex justify-between text-[10px] font-mono border-b border-white/10 pb-2">
-              <span className="opacity-40 uppercase">Latency_Node</span>
+              <span className="opacity-40 uppercase">Network_Latency</span>
               <span className="text-indigo-400">12ms</span>
             </div>
           </div>
@@ -187,7 +187,7 @@ const LiveRoomJoin = () => (
   <div className="max-w-2xl mx-auto py-12">
     <div className="text-center mb-12">
       <div className="inline-block px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-4">
-        Uplink_Required
+        Join_Required
       </div>
       <h2 className="text-4xl font-bold tracking-tighter text-slate-900">
         Enter Access Code.
@@ -233,7 +233,7 @@ const Dashboard = () => {
   if (!user)
     return (
       <div className="h-screen bg-[#FAFAFB] flex items-center justify-center font-sans tracking-[0.3em] text-[10px] font-black text-slate-400 uppercase">
-        Initialising_Neural_Link...
+        Loading_Dashboard...
       </div>
     );
 
@@ -293,14 +293,25 @@ const Dashboard = () => {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="text-right hidden sm:block border-r border-slate-200 pr-6">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-              Operator
-            </p>
-            <p className="text-xs font-bold text-slate-900 uppercase tracking-tighter">
-              {user.name}
-            </p>
-          </div>
+          <Link to="/edit-profile" className="flex items-center gap-3 border-r border-slate-200 pr-6 group cursor-pointer">
+            <div className="text-right hidden sm:block">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-500 transition-colors">
+                Profile
+              </p>
+              <p className="text-xs font-bold text-slate-900 uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">
+                {user.name}
+              </p>
+            </div>
+            <div className="w-9 h-9 group-hover:scale-105 transition-transform">
+              <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden text-slate-900 font-black text-xs">
+                {user.profileUrl ? (
+                  <img src={user.profileUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user.name?.charAt(0).toUpperCase()
+                )}
+              </div>
+            </div>
+          </Link>
           <button
             onClick={handleLogout}
             className="px-6 py-2.5 bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]"
@@ -321,7 +332,7 @@ const Dashboard = () => {
               className="flex items-center gap-3 mb-6"
             >
               <span className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 bg-indigo-50 px-2 py-1">
-                Protocol: {activeTab.toUpperCase()}
+                Section: {activeTab.toUpperCase()}
               </span>
             </motion.div>
 
@@ -334,23 +345,23 @@ const Dashboard = () => {
                 ? "System"
                 : activeTab === "host"
                   ? "Create"
-                  : "Initialize"}{" "}
+                  : "Join"}{" "}
               <br />
               <span className="text-indigo-600 italic">
                 {activeTab === "overview"
                   ? "Overview."
                   : activeTab === "host"
-                    ? "Deployment."
-                    : "Connection."}
+                    ? "Session."
+                    : "Session."}
               </span>
             </motion.h1>
 
             <p className="text-lg text-slate-500 max-w-lg leading-relaxed font-normal">
               {activeTab === "overview"
-                ? "Monitor system performance, manage active sessions, and access real-time telemetry data."
+                ? "Monitor system performance, manage active sessions, and access real-time system data."
                 : activeTab === "host"
-                  ? "Configure real-time neural clusters for immediate student assessment and surgical data feedback."
-                  : "Synchronize with an existing node to begin the automated assessment lifecycle."}
+                  ? "Host a real-time classroom session for immediate student assessment and instant feedback."
+                  : "Join an existing classroom to begin the assessment."}
             </p>
           </section>
 
@@ -375,11 +386,11 @@ const Dashboard = () => {
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-none shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-            <span>Node_Active</span>
+            <span>System_Active</span>
           </div>
           <span className="opacity-30">|</span>
           <div className="flex items-center gap-2">
-            <span className="text-indigo-600">Secure_Uplink</span>
+            <span className="text-indigo-600">Secure_Connection</span>
             <span className="tabular-nums">256_AES</span>
           </div>
         </div>

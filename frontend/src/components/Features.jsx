@@ -5,8 +5,8 @@ const Features = () => {
   const features = [
     {
       id: '01',
-      title: 'Neural Generation',
-      description: 'Deploy comprehensive assessments in under 30 seconds via our proprietary inference engine.',
+      title: 'AI Generation',
+      description: 'Create comprehensive assessments in under 30 seconds via our proprietary AI engine.',
       accent: 'border-indigo-500'
     },
     {
@@ -17,7 +17,7 @@ const Features = () => {
     },
     {
       id: '03',
-      title: 'Quantum Analytics',
+      title: 'Advanced Analytics',
       description: 'Granular data visualization mapping knowledge gaps with surgical precision.',
       accent: 'border-purple-500'
     },
@@ -30,13 +30,13 @@ const Features = () => {
     {
       id: '05',
       title: 'Elastic Scaling',
-      description: 'Zero-latency architecture supporting simultaneous deployment across entire districts.',
+      description: 'Zero-latency architecture supporting simultaneous testing across entire districts.',
       accent: 'border-blue-500'
     },
     {
       id: '06',
       title: 'Encryption Tier-1',
-      description: 'Enterprise-grade security protocols with 99.9% uptime for mission-critical reliability.',
+      description: 'Enterprise-grade security protocols with 99.9% uptime for maximum reliability.',
       accent: 'border-rose-500'
     }
   ];

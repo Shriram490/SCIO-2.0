@@ -61,7 +61,7 @@ const Hero = () => {
               className="flex flex-row gap-4 mb-14"
             >
               <button className="px-8 py-4 bg-slate-900 text-white font-bold text-sm uppercase tracking-widest rounded-sm hover:bg-indigo-600 transition-all duration-300 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]">
-                Deploy SCIO Free
+                Start SCIO Free
               </button>
               <button className="px-8 py-4 bg-white text-slate-900 font-bold text-sm uppercase tracking-widest rounded-sm border border-slate-200 hover:bg-slate-50 transition-all">
                 The Methodology

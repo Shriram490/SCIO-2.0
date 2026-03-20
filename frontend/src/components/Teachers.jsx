@@ -31,7 +31,7 @@ const Teachers = () => {
     },
     {
       title: 'Node Sharing',
-      description: 'Deploy collaborative assessment modules across departmental clusters.',
+      description: 'Create collaborative assessment modules across classrooms.',
       tag: 'TEAM'
     }
   ];

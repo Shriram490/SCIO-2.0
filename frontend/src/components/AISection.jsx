@@ -48,7 +48,7 @@ const AISection = () => {
             </div>
             
             <button className="px-8 py-4 bg-slate-900 text-white font-bold text-xs uppercase tracking-widest rounded-sm shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
-              Initialize Generation
+              Start Generation
             </button>
           </div>
           
@@ -118,7 +118,7 @@ const AISection = () => {
             {/* Architectural Label on Right Side */}
             <div className="absolute -bottom-6 -right-6 bg-white p-4 border border-slate-200 shadow-xl hidden lg:block">
               <div className="text-[10px] font-black uppercase text-slate-400 mb-1">Architecture</div>
-              <div className="text-sm font-bold text-slate-900">Neural Sandbox v1.0.4</div>
+              <div className="text-sm font-bold text-slate-900">AI Sandbox v1.0.4</div>
             </div>
           </div>
         </div>

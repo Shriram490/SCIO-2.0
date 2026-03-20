@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import socket from "../socket";
 import RoomManager from "../utils/roomManager";
@@ -392,19 +392,75 @@ const LiveRoomHost = () => {
         {/* Header */}
         <header className="relative z-10 h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 flex items-center justify-between">
           <div className="flex items-center gap-12">
-            <div className="w-7 h-7 bg-indigo-600 flex items-center justify-center">
-              <span className="text-white font-black text-sm italic">S</span>
-            </div>
-            <span className="text-lg font-bold tracking-tighter text-slate-900 uppercase italic">
-              SCIO_
-            </span>
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-7 h-7 bg-indigo-600 flex items-center justify-center">
+                <span className="text-white font-black text-sm italic">S</span>
+              </div>
+              <span className="text-lg font-bold tracking-tighter text-slate-900 uppercase italic">
+                SCIO_
+              </span>
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-8">
+              {["overview", "host", "join"].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => {
+                    if (item === "host") {
+                      navigate("/host-room");
+                    } else if (item === "join") {
+                      navigate("/join-room");
+                    } else {
+                      navigate("/dashboard");
+                    }
+                  }}
+                  className={`text-[11px] font-black uppercase tracking-[0.2em] transition-all pb-1 border-b-2 h-20 flex items-center ${
+                    item === "host"
+                      ? "border-indigo-600 text-indigo-600"
+                      : "border-transparent text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  {item === "overview"
+                    ? "Dashboard"
+                    : item === "host"
+                      ? "Host_Session"
+                      : "Join_Session"}
+                </button>
+              ))}
+            </nav>
           </div>
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="px-6 py-2.5 bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none"
-          >
-            Back to Dashboard
-          </button>
+
+          <div className="flex items-center gap-6">
+            <Link to="/edit-profile" className="flex items-center gap-3 border-r border-slate-200 pr-6 group cursor-pointer">
+              <div className="text-right hidden sm:block">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-500 transition-colors">
+                  Profile
+                </p>
+                <p className="text-xs font-bold text-slate-900 uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">
+                  {getCurrentUser()?.name}
+                </p>
+              </div>
+              <div className="w-9 h-9 group-hover:scale-105 transition-transform">
+                <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden text-slate-900 font-black text-xs">
+                  {getCurrentUser()?.profileUrl ? (
+                    <img src={getCurrentUser()?.profileUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getCurrentUser()?.name?.charAt(0).toUpperCase()
+                  )}
+                </div>
+              </div>
+            </Link>
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/login");
+              }}
+              className="px-6 py-2.5 bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]"
+            >
+              Logout
+            </button>
+          </div>
         </header>
 
         {/* Main Content */}
@@ -418,7 +474,7 @@ const LiveRoomHost = () => {
                 className="flex items-center gap-3 mb-6"
               >
                 <span className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 bg-indigo-50 px-2 py-1">
-                  Protocol: HOST_INIT
+                  Session: HOST_INIT
                 </span>
               </motion.div>
 
@@ -428,11 +484,11 @@ const LiveRoomHost = () => {
                 className="text-6xl md:text-[5.5rem] font-bold tracking-tighter text-slate-900 leading-[0.9] mb-6"
               >
                 Create <br />
-                <span className="text-indigo-600 italic">Deployment.</span>
+                <span className="text-indigo-600 italic">Session.</span>
               </motion.h1>
 
               <p className="text-lg text-slate-500 max-w-lg leading-relaxed font-normal">
-                Initialize a new neural cluster session for real-time assessment
+                Start a new classroom session for real-time assessment
                 and data synchronization.
               </p>
             </section>
@@ -446,7 +502,7 @@ const LiveRoomHost = () => {
               <div className="lg:col-span-7 space-y-8">
                 <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
                   <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                    Initialize_New_Session
+                    Start_New_Session
                   </h3>
 
                   <form onSubmit={handleCreateRoom} className="space-y-6">
@@ -464,7 +520,7 @@ const LiveRoomHost = () => {
                           })
                         }
                         className="w-full bg-slate-50 border border-slate-200 p-4 text-xs font-bold tracking-widest focus:outline-none focus:border-indigo-600 transition-all"
-                        placeholder="ENTER_SESSION_IDENTIFIER"
+                        placeholder="ENTER_SESSION_NAME"
                         required
                       />
                     </div>
@@ -483,7 +539,7 @@ const LiveRoomHost = () => {
                           })
                         }
                         className="w-full bg-slate-50 border border-slate-200 p-4 text-xs font-bold tracking-widest focus:outline-none focus:border-indigo-600 transition-all"
-                        placeholder="LIVE_ASSESSMENT_PROTOCOL"
+                        placeholder="LIVE_ASSESSMENT"
                       />
                     </div>
 
@@ -551,7 +607,7 @@ const LiveRoomHost = () => {
                       disabled={loading}
                       className="w-full py-4 bg-slate-900 text-white font-bold text-sm uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none disabled:opacity-50"
                     >
-                      {loading ? "DEPLOYING..." : "DEPLOY_HOST_PROTOCOL"}
+                      {loading ? "STARTING..." : "START_HOST_SESSION"}
                     </button>
                   </form>
                 </div>
@@ -561,7 +617,7 @@ const LiveRoomHost = () => {
                 <div className="bg-slate-900 p-8 text-white relative overflow-hidden h-full min-h-[400px]">
                   <div className="relative z-10 flex flex-col h-full justify-between">
                     <p className="text-[10px] font-black tracking-[0.4em] text-indigo-400">
-                      HOST_TELEMETRY
+                      HOST_SYSTEM_INFO
                     </p>
 
                     <div className="space-y-4">
@@ -579,7 +635,7 @@ const LiveRoomHost = () => {
                       </div>
                       <div className="flex justify-between text-[10px] font-mono border-b border-white/10 pb-2">
                         <span className="opacity-40 uppercase">
-                          Available_Nodes
+                          Available_Students
                         </span>
                         <span className="text-indigo-400">∞</span>
                       </div>
@@ -632,19 +688,71 @@ const LiveRoomHost = () => {
       {/* Header */}
       <header className="relative z-10 h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 flex items-center justify-between">
         <div className="flex items-center gap-12">
-          <div className="w-7 h-7 bg-indigo-600 flex items-center justify-center">
-            <span className="text-white font-black text-sm italic">S</span>
-          </div>
-          <span className="text-lg font-bold tracking-tighter text-slate-900 uppercase italic">
-            SCIO_
-          </span>
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-7 h-7 bg-indigo-600 flex items-center justify-center">
+              <span className="text-white font-black text-sm italic">S</span>
+            </div>
+            <span className="text-lg font-bold tracking-tighter text-slate-900 uppercase italic">
+              SCIO_
+            </span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8">
+            {["overview", "host", "join"].map((item) => (
+              <button
+                key={item}
+                onClick={() => {
+                  if (item === "host") {
+                    navigate("/host-room");
+                  } else if (item === "join") {
+                    navigate("/join-room");
+                  } else {
+                    navigate("/dashboard");
+                  }
+                }}
+                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-all pb-1 border-b-2 h-20 flex items-center ${
+                  item === "host"
+                    ? "border-indigo-600 text-indigo-600"
+                    : "border-transparent text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                {item === "overview"
+                  ? "Dashboard"
+                  : item === "host"
+                    ? "Host_Session"
+                    : "Join_Session"}
+              </button>
+            ))}
+          </nav>
         </div>
-        <button
-          onClick={handleLeaveRoom}
-          className="px-6 py-2.5 bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none"
-        >
-          Terminate Session
-        </button>
+
+        <div className="flex items-center gap-6">
+          <Link to="/edit-profile" className="flex items-center gap-3 border-r border-slate-200 pr-6 group cursor-pointer">
+            <div className="text-right hidden sm:block">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-500 transition-colors">
+                Profile
+              </p>
+              <p className="text-xs font-bold text-slate-900 uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">
+                {getCurrentUser()?.name}
+              </p>
+            </div>
+            <div className="w-9 h-9 group-hover:scale-105 transition-transform">
+              <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden text-slate-900 font-black text-xs">
+                {getCurrentUser()?.profileUrl ? (
+                  <img src={getCurrentUser()?.profileUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getCurrentUser()?.name?.charAt(0).toUpperCase()
+                )}
+              </div>
+            </div>
+          </Link>
+          <button
+            onClick={handleLeaveRoom}
+            className="px-6 py-2.5 bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none"
+          >
+            End Session
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -658,7 +766,7 @@ const LiveRoomHost = () => {
               className="flex items-center gap-3 mb-6"
             >
               <span className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 bg-indigo-50 px-2 py-1">
-                Protocol: HOST_ACTIVE
+                Session: HOST_ACTIVE
               </span>
             </motion.div>
 
@@ -672,7 +780,7 @@ const LiveRoomHost = () => {
             </motion.h1>
 
             <p className="text-lg text-slate-500 max-w-lg leading-relaxed font-normal">
-              Neural cluster deployed. Room code:{" "}
+              Classroom session started. Room code:{" "}
               <span className="font-mono text-indigo-600">{room.id}</span>
             </p>
           </section>
@@ -729,7 +837,7 @@ const LiveRoomHost = () => {
               {/* Share Code */}
               <div className="bg-indigo-50 border border-indigo-200 p-8">
                 <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-4 italic">
-                  Share_Access_Protocol
+                  Share_Access_Code
                 </h3>
 
                 <div className="flex gap-3">
@@ -755,7 +863,7 @@ const LiveRoomHost = () => {
               {quizActive && (
                 <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
                   <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                    Assessment_Protocol_Active
+                    Assessment_Active
                   </h3>
 
                   {/* Timer - HIDDEN */}
@@ -861,7 +969,7 @@ const LiveRoomHost = () => {
               {/* Participants */}
               <div className="bg-white border border-slate-200 p-8 shadow-[4px_4px_0px_0px_rgba(79,70,229,0.1)]">
                 <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-6 italic">
-                  Connected_Nodes
+                  Connected_Students
                 </h3>
 
                 <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -909,7 +1017,7 @@ const LiveRoomHost = () => {
                   onClick={handleStartQuiz}
                   className="w-full py-4 bg-green-600 text-white font-bold text-sm uppercase tracking-widest hover:bg-green-500 transition-all shadow-[4px_4px_0px_0px_rgba(34,197,94,0.3)] hover:shadow-none"
                 >
-                  Initialize_Assessment
+                  Start_Assessment
                 </button>
               )}
 

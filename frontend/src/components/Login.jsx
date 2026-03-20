@@ -24,7 +24,7 @@ const Login = () => {
     try {
       const response = await login(formData);
       if (response.success) {
-        navigate("/dashboard");
+        navigate("/");
       } else {
         setError(response.message || "LOGIN_FAILED");
       }
@@ -53,7 +53,7 @@ const Login = () => {
               </span>
             </Link>
             <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">
-              Initialize Session
+              Welcome Back
             </h1>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
               New User?{" "}
@@ -67,13 +67,13 @@ const Login = () => {
             <div className="space-y-4">
               {[
                 {
-                  label: "Uplink Email",
+                  label: "Email Address",
                   name: "email",
                   type: "email",
                   placeholder: "USER@DOMAIN.COM",
                 },
                 {
-                  label: "Access Key",
+                  label: "Password",
                   name: "password",
                   type: "password",
                   placeholder: "••••••••",
@@ -129,12 +129,12 @@ const Login = () => {
               disabled={loading}
               className="w-full py-4 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.3em] shadow-[8px_8px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all disabled:opacity-50"
             >
-              {loading ? "Authenticating..." : "Establish Connection"}
+              {loading ? "Authenticating..." : "Login"}
             </button>
 
             <div className="mt-8 p-4 bg-slate-50 border border-slate-100">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                Sandbox Credentials:
+                Demo Credentials:
               </p>
               <div className="grid grid-cols-1 gap-1 font-mono text-[10px] text-slate-600">
                 <p>U: admin@example.com / P: password</p>
@@ -169,18 +169,18 @@ const Login = () => {
           <h2 className="text-6xl font-bold text-white tracking-tighter leading-none mb-6">
             WELCOME <br />
             <span className="text-indigo-500 italic text-5xl">
-              BACK_OPERATOR.
+              BACK_USER.
             </span>
           </h2>
           <p className="text-slate-400 text-sm tracking-widest uppercase font-medium ml-auto max-w-sm leading-relaxed">
-            Re-establishing connection to the pedagogical assessment engine.
+            Re-establishing connection to the classroom assessment engine.
           </p>
         </div>
 
         {/* Technical Data Visualization Mockup */}
         <div className="relative z-10 border-r border-slate-700 pr-8 text-right self-end">
           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-4">
-            Core_Status
+            System_Status
           </p>
           <div className="flex gap-2 justify-end mb-2">
             {[1, 2, 3, 4, 5].map((i) => (

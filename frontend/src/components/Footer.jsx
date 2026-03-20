@@ -17,7 +17,7 @@ const Footer = () => {
             </div>
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm mb-10 font-medium">
               Architecting the next generation of assessment intelligence. 
-              Our proprietary neural engine maps curriculum nodes to high-probability retention outcomes.
+              Our proprietary AI engine maps curriculum topics to high-probability learning outcomes.
             </p>
             
             {/* System Status - Interactive Element */}
@@ -35,7 +35,7 @@ const Footer = () => {
             <div>
               <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-500 mb-8">Infrastructure</h3>
               <ul className="space-y-4">
-                {['Neural Core', 'API Interface', 'Latency Metrics', 'Security Tier-1'].map((item) => (
+                {['AI Core', 'API Interface', 'Performance Metrics', 'Security'].map((item) => (
                   <li key={item}>
                     <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors flex items-center group">
                       <span className="w-0 group-hover:w-3 h-[1px] bg-indigo-500 transition-all mr-0 group-hover:mr-2"></span>
