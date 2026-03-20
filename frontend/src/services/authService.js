@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -152,6 +152,37 @@ const refreshUserData = async () => {
   }
 };
 
+// Update profile
+const updateProfile = async (profileData) => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+    
+    const data = await handleResponse(response);
+    
+    if (data.success) {
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Update profile error:', error);
+    throw error;
+  }
+};
+
 export {
   register,
   login,
@@ -161,4 +192,5 @@ export {
   getStoredUser,
   getStoredToken,
   refreshUserData,
+  updateProfile,
 };

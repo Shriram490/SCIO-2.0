@@ -5,7 +5,7 @@ const Students = () => {
   const features = [
     {
       id: '01',
-      title: 'Neural Skill Mapping',
+      title: 'AI Skill Mapping',
       description: 'The engine identifies your cognitive baseline and recalibrates difficulty in real-time.',
       tag: 'ADAPTIVE'
     },
@@ -94,7 +94,7 @@ const Students = () => {
             
             <div className="grid grid-cols-1 gap-4">
               {[
-                { name: 'Alex Chen', role: 'Mathematics Cluster', text: 'The neural scaling adjusted to my friction points in Calculus. Mastery achieved 40% faster.', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop' },
+                { name: 'Alex Chen', role: 'Mathematics Cluster', text: 'The AI adjusted to my learning speed in Calculus. Mastery achieved 40% faster.', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop' },
                 { name: 'Maria Rodriguez', role: 'Biology Division', text: 'Instant deconstruction of mistakes allows for immediate recalibration of mental models.', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop' }
               ].map((story, i) => (
                 <div key={i} className="flex gap-6 p-6 border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow group">
@@ -147,7 +147,7 @@ const Students = () => {
               </div>
               
               <button className="w-full py-5 bg-white text-slate-900 font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-500 hover:text-white transition-all shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] hover:shadow-none">
-                Initialize Student Access
+                Get Student Access
               </button>
             </motion.div>
           </div>

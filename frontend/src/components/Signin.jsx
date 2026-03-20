@@ -42,7 +42,7 @@ const Signin = () => {
         setError(response.message || "REGISTRATION_FAILED");
       }
     } catch (err) {
-      setError(err.message || "SYSTEM_FAILURE: UPLINK_TIMEOUT");
+      setError(err.message || "SYSTEM_FAILURE: CONNECTION_TIMEOUT");
     } finally {
       setLoading(false);
     }
@@ -63,11 +63,11 @@ const Signin = () => {
           </Link>
 
           <h2 className="text-6xl font-bold text-white tracking-tighter leading-none mb-6">
-            INITIALIZE <br />
-            <span className="text-indigo-500 italic">CORE_ACCESS.</span>
+            CREATE <br />
+            <span className="text-indigo-500 italic">ACCOUNT.</span>
           </h2>
           <p className="text-slate-400 text-sm tracking-widest uppercase font-medium max-w-sm leading-relaxed">
-            Deploy your pedagogical profile to the neural cluster.
+            Create your teacher profile to access the classroom platform.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ const Signin = () => {
             Encryption_Standard
           </p>
           <p className="text-xs text-slate-500 font-mono">
-            AES-256-GCM Secure Uplink Active
+            AES-256-GCM Secure Connection Active
           </p>
         </div>
       </div>
@@ -96,7 +96,7 @@ const Signin = () => {
               Create Account
             </h1>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
-              Existing Node?{" "}
+              Existing User?{" "}
               <Link to="/login" className="text-indigo-600 hover:underline">
                 Re-Authenticate
               </Link>
@@ -166,7 +166,7 @@ const Signin = () => {
                   className="w-4 h-4 border-2 border-slate-300 rounded-none checked:bg-indigo-600 transition-all"
                 />
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter group-hover:text-slate-900">
-                  Accept Data Protocol & User Terms
+                  Accept Privacy Policy & User Terms
                 </span>
               </label>
             </div>
@@ -176,7 +176,7 @@ const Signin = () => {
               disabled={loading}
               className="w-full py-4 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.3em] shadow-[8px_8px_0px_0px_rgba(79,70,229,0.3)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all disabled:opacity-50"
             >
-              {loading ? "Processing..." : "Deploy Profile"}
+              {loading ? "Processing..." : "Create Account"}
             </button>
           </form>
 

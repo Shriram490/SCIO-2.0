@@ -8,6 +8,12 @@ const appRoutes = require("./routes/appRoutes");
 
 dotenv.config();
 
+// Set default environment variables if not set
+process.env.PORT = process.env.PORT || '5000';
+process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/scio';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
 // Connect to database
 connectDB();
 
@@ -17,7 +23,7 @@ const server = http.createServer(app);
 // Socket.io setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:63740"],
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -25,10 +31,11 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173"],
+  origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:63740"],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Basic route
 app.get("/", (req, res) => {
@@ -585,7 +592,7 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5000; // Force port 5000
 
 server.listen(PORT, () => {
   console.log(`🚀 SCIO Backend Server running on port ${PORT}`);

@@ -82,12 +82,16 @@ const Navbar = () => {
                     {user.name.split(" ")[0]}
                   </p>
                   <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mt-1">
-                    ID: {user.id || "NODE_01"}
+                    ID: {user.id || "USER_01"}
                   </p>
                 </div>
-                <div className="w-9 h-9 border-2 border-slate-900 p-0.5 group-hover:border-indigo-600 transition-colors">
-                  <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-900 font-black text-xs">
-                    {user.name?.charAt(0).toUpperCase()}
+                <div className="w-9 h-9 group-hover:scale-105 transition-transform">
+                  <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden text-slate-900 font-black text-xs">
+                    {user.profileUrl ? (
+                      <img src={user.profileUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      user.name?.charAt(0).toUpperCase()
+                    )}
                   </div>
                 </div>
               </button>
@@ -124,7 +128,7 @@ const Navbar = () => {
                           12
                         </p>
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                          Deployments
+                          Assessments
                         </p>
                       </div>
                       <div className="border border-slate-100 p-3">
@@ -137,12 +141,20 @@ const Navbar = () => {
                       </div>
                     </div>
 
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center justify-center py-3 text-slate-400 hover:text-white hover:bg-rose-600 transition-all font-black text-[10px] uppercase tracking-[0.2em]"
-                    >
-                      Terminate Session
-                    </button>
+                    <div className="flex flex-col">
+                      <Link
+                        to="/edit-profile"
+                        className="w-full flex items-center justify-center py-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-[0.2em] border-b border-slate-700/50"
+                      >
+                        Edit Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center py-3 text-slate-400 hover:text-white hover:bg-rose-600 transition-all font-black text-[10px] uppercase tracking-[0.2em]"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
