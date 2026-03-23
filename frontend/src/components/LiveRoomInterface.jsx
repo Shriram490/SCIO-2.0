@@ -25,47 +25,8 @@ const LiveRoomInterface = () => {
     return userData ? JSON.parse(userData) : null;
   };
 
-  // Mock quiz data (in real app, this would come from room)
-  const mockQuiz = {
-    title: 'Live Quiz Session',
-    questions: [
-      {
-        id: 1,
-        question: 'What is the capital of France?',
-        options: ['London', 'Berlin', 'Paris', 'Madrid'],
-        correctAnswer: 2,
-        timeLimit: 30
-      },
-      {
-        id: 2,
-        question: 'What is 2 + 2?',
-        options: ['3', '4', '5', '6'],
-        correctAnswer: 1,
-        timeLimit: 30
-      },
-      {
-        id: 3,
-        question: 'Which planet is known as the Red Planet?',
-        options: ['Venus', 'Mars', 'Jupiter', 'Saturn'],
-        correctAnswer: 1,
-        timeLimit: 30
-      },
-      {
-        id: 4,
-        question: 'What is the largest ocean on Earth?',
-        options: ['Atlantic', 'Indian', 'Arctic', 'Pacific'],
-        correctAnswer: 3,
-        timeLimit: 30
-      },
-      {
-        id: 5,
-        question: 'Who painted the Mona Lisa?',
-        options: ['Van Gogh', 'Da Vinci', 'Picasso', 'Rembrandt'],
-        correctAnswer: 1,
-        timeLimit: 30
-      }
-    ]
-  };
+  const [activeQuiz, setActiveQuiz] = useState(null);
+
 
   // Initialize socket connection
   useEffect(() => {
@@ -97,14 +58,16 @@ const LiveRoomInterface = () => {
         // Listen for quiz start
         socketService.onQuizStarted((data) => {
           if (data.roomCode === roomCode) {
+            setActiveQuiz(data.quiz);
             setQuizStarted(true);
-            setTimeRemaining(30); // Always start with 30 seconds
+            setTimeRemaining(30); 
             setCurrentQuestion(0);
             setAnswerSubmitted(false);
             setSelectedAnswer(null);
             setUserScore(0);
           }
         });
+
 
         // Listen for timer updates from host
         socketService.on('timer-update', (data) => {
@@ -174,10 +137,12 @@ const LiveRoomInterface = () => {
 
   // Handle answer submission - ONLY submit, NO auto-move
   const handleSubmitAnswer = () => {
-    const question = mockQuiz.questions[currentQuestion];
+    if (!activeQuiz) return;
+    const question = activeQuiz.questions[currentQuestion];
     if (!question) return;
 
-    const isCorrect = selectedAnswer === question.correctAnswer;
+    const isCorrect = selectedAnswer === question.correct;
+
     
     // Submit answer to backend
     socketService.submitAnswer({
@@ -244,7 +209,7 @@ const LiveRoomInterface = () => {
   const handleNextQuestion = () => {
     // This is just for UI feedback - participants cannot actually control question flow
     // The host controls the actual question progression
-    if (currentQuestion < mockQuiz.questions.length - 1) {
+    if (currentQuestion < activeQuiz.questions.length - 1) {
       // Just update UI state for better user experience
       // The actual question change will come from host via socket
       setAnswerSubmitted(false);
@@ -253,6 +218,7 @@ const LiveRoomInterface = () => {
       setQuizCompleted(true);
       setQuizStarted(false);
     }
+
   };
 
   // Format time display
@@ -263,7 +229,8 @@ const LiveRoomInterface = () => {
   };
 
   // Get current question data
-  const currentQuestionData = mockQuiz.questions[currentQuestion];
+  const currentQuestionData = activeQuiz?.questions[currentQuestion];
+
 
   if (loading) {
     return (
@@ -374,12 +341,13 @@ const LiveRoomInterface = () => {
 
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="text-4xl font-bold text-indigo-600 mb-2">
-              {userScore}/{mockQuiz.questions.length}
+              {userScore}/{activeQuiz?.questions.length}
             </div>
             <p className="text-gray-600">
-              Score: {Math.round((userScore / mockQuiz.questions.length) * 100)}%
+              Score: {Math.round((userScore / (activeQuiz?.questions.length || 1)) * 100)}%
             </p>
           </div>
+
 
           <div className="space-y-3">
             <button
@@ -400,9 +368,10 @@ const LiveRoomInterface = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{mockQuiz.title}</h1>
-            <p className="text-gray-600">Question {currentQuestion + 1} of {mockQuiz.questions.length}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{activeQuiz?.title}</h1>
+            <p className="text-gray-600">Question {currentQuestion + 1} of {activeQuiz?.questions.length}</p>
           </div>
+
           <div className="flex items-center space-x-4">
             <div className="hidden">
               <div className="text-center">
@@ -434,8 +403,9 @@ const LiveRoomInterface = () => {
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div 
               className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${((currentQuestion + 1) / mockQuiz.questions.length) * 100}%` }}
+              style={{ width: `${((currentQuestion + 1) / (activeQuiz?.questions.length || 1)) * 100}%` }}
             />
+
           </div>
         </div>
 
@@ -458,10 +428,11 @@ const LiveRoomInterface = () => {
                     disabled={answerSubmitted}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                       answerSubmitted
-                        ? index === currentQuestionData.correctAnswer
+                        ? index === currentQuestionData.correct
                           ? 'border-green-500 bg-green-50'
                           : index === selectedAnswer
                           ? 'border-red-500 bg-red-50'
+
                           : 'border-gray-200 bg-gray-50'
                         : selectedAnswer === index
                         ? 'border-indigo-500 bg-indigo-50'
@@ -472,9 +443,10 @@ const LiveRoomInterface = () => {
                       <div className="flex items-center space-x-3">
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                           answerSubmitted
-                            ? index === currentQuestionData.correctAnswer
+                            ? index === currentQuestionData.correct
                               ? 'border-green-500 bg-green-500'
                               : index === selectedAnswer
+
                               ? 'border-red-500 bg-red-500'
                               : 'border-gray-300'
                             : selectedAnswer === index
@@ -483,9 +455,10 @@ const LiveRoomInterface = () => {
                         }`}>
                           {answerSubmitted && (
                             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              {index === currentQuestionData.correctAnswer ? (
+                              {index === currentQuestionData.correct ? (
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               ) : index === selectedAnswer ? (
+
                                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                               ) : null}
                             </svg>
@@ -496,10 +469,11 @@ const LiveRoomInterface = () => {
                         </div>
                         <span className="text-gray-900">{option}</span>
                       </div>
-                      {answerSubmitted && index === currentQuestionData.correctAnswer && (
+                      {answerSubmitted && index === currentQuestionData.correct && (
                         <span className="text-green-600 font-medium">Correct!</span>
                       )}
-                      {answerSubmitted && index === selectedAnswer && index !== currentQuestionData.correctAnswer && (
+                      {answerSubmitted && index === selectedAnswer && index !== currentQuestionData.correct && (
+
                         <span className="text-red-600 font-medium">Wrong!</span>
                       )}
                     </div>
@@ -530,7 +504,8 @@ const LiveRoomInterface = () => {
                   onClick={handleNextQuestion}
                   className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  {currentQuestion < mockQuiz.questions.length - 1 ? 'Next Question' : 'See Results'}
+                  {currentQuestion < (activeQuiz?.questions.length || 0) - 1 ? 'Next Question' : 'See Results'}
+
                 </button>
               )}
             </div>

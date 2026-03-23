@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const getSecret = () => (process.env.JWT_SECRET || '').trim();
+
+
 const auth = async (req, res, next) => {
   try {
     // Get token from header
@@ -16,7 +19,9 @@ const auth = async (req, res, next) => {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = getSecret();
+    const decoded = jwt.verify(token, secret);
+
     
     // Get user from database
     const user = await User.findById(decoded.id).select('-password');
@@ -39,7 +44,9 @@ const auth = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('Auth middleware error:', error.message);
+
+
     
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({

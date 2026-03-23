@@ -1,0 +1,24 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+Sending prompt to Gemini...
+Got response. Parsing...
+Parsed successfully: {
+  "quizTitle": "Easy React Hooks Basics",
+  "questions": [
+    {
+      "type": "mcq",
+      "question": "What is the primary benefit of using React Hooks?",
+      "options": [
+        "To write more complex class components.",
+        "To add state and other React features to functional components.",
+        "To speed up database queries in React applications.",
+        "To replace the need for JSX entirely."
+      ],
+      "answer": "To add state and other React features to functional components."
+    },
+    {
+      "type": "short",
+      "question": "Which specific React Hook allows functional components to manage their own state?",
+      "answer": "useState"
+    }
+  ]
+}

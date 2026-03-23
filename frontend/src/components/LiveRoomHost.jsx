@@ -26,111 +26,12 @@ const LiveRoomHost = () => {
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [currentQuestionResponses, setCurrentQuestionResponses] = useState(0);
 
-  // Static quiz questions
-  const quizQuestions = [
-    {
-      id: 1,
-      section: "HTML",
-      question: "What is the correct semantic tag for navigation links?",
-      options: ["<div>", "<nav>", "<section>", "<aside>"],
-      correct: 1,
-      timeLimit: 30
-    },
-    {
-      id: 2,
-      section: "HTML",
-      question: "Which attribute is used to open a link in a new tab?",
-      options: [
-        'href="_blank"',
-        'target="_new"',
-        'target="_blank"',
-        'newtab="true"',
-      ],
-      correct: 2,
-      timeLimit: 30
-    },
-    {
-      id: 3,
-      section: "CSS",
-      question: "What does position: relative; do?",
-      options: [
-        "Removes element from document flow",
-        "Positions element relative to its normal position",
-        "Fixes element to screen",
-        "Aligns element to parent center",
-      ],
-      correct: 1,
-      timeLimit: 30
-    },
-    {
-      id: 4,
-      section: "CSS",
-      question: "Which CSS property is used to make a website responsive?",
-      options: ["float", "media queries", "z-index", "display: block"],
-      correct: 1,
-      timeLimit: 30
-    },
-    {
-      id: 5,
-      section: "CSS",
-      question: "What will flex: 1; do inside a flex container?",
-      options: [
-        "Makes element invisible",
-        "Takes equal available space",
-        "Fixes width to 1px",
-        "Moves element to top",
-      ],
-      correct: 1,
-      timeLimit: 30
-    },
-    {
-      id: 6,
-      section: "JavaScript",
-      question: "What is output?\n\nconsole.log(typeof null);",
-      options: ['"null"', '"object"', '"undefined"', '"string"'],
-      correct: 1,
-      timeLimit: 30
-    },
-    {
-      id: 7,
-      section: "JavaScript",
-      question: "Which method converts JSON string to JavaScript object?",
-      options: [
-        "JSON.stringify()",
-        "JSON.parse()",
-        "JSON.convert()",
-        "JSON.object()",
-      ],
-      correct: 1,
-      timeLimit: 30
-    },
-    {
-      id: 8,
-      section: "JavaScript",
-      question: "What is a Promise in JavaScript?",
-      options: [
-        "A loop",
-        "A CSS feature",
-        "An object representing async operation",
-        "A database",
-      ],
-      correct: 2,
-    },
-    {
-      id: 9,
-      section: "Backend & Full Stack",
-      question: 'Which status code means "Not Found"?',
-      options: ["200", "201", "404", "500"],
-      correct: 2,
-    },
-    {
-      id: 10,
-      section: "Backend & Full Stack",
-      question: "In MongoDB, which method is used to find all documents?",
-      options: ["findAll()", "get()", "find()", "select()"],
-      correct: 2,
-    },
-  ];
+  // AI Quiz state
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [subject, setSubject] = useState("General Knowledge");
+  const [difficulty, setDifficulty] = useState("Medium");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [quizReady, setQuizReady] = useState(false);
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -149,6 +50,7 @@ const LiveRoomHost = () => {
       // Don't disconnect here as other components might need it
     };
   }, []);
+
 
   // Handle room creation
   const handleCreateRoom = (e) => {
@@ -246,32 +148,67 @@ const LiveRoomHost = () => {
     }
   };
 
-  const handleStartQuiz = () => {
-    if (room) {
-      const quizData = {
-        title: roomSettings.quizTitle || "Web Development Quiz 5",
-        questions: quizQuestions,
-        duration: 30,
-        currentQuestionIndex: 0,
-        timeRemaining: 30,
-      };
-
-      console.log("🚀 Starting quiz with data:", quizData);
-      console.log("📡 Emitting start-quiz event to room:", room.id);
-
-      setQuizActive(true);
-      setCurrentQuestionIndex(0);
-      setTimeRemaining(30);
-
-      socket.emit("start-quiz", {
-        roomCode: room.id,
-        quizData,
-        currentQuestion: quizQuestions[0],
-        timeRemaining: 30,
+  const handleGenerateAIQuiz = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai-quiz/generate-quiz`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject,
+          difficulty: difficulty.toLowerCase(),
+          questionCount: 5,
+          questionTypes: ['multiple-choice']
+        })
       });
 
-      console.log("✅ Quiz start event emitted");
+      if (!response.ok) throw new Error('Generation failed');
+      
+      const data = await response.json();
+      
+      // Map AI response to our component format
+      const formattedQuestions = data.questions.map((q, idx) => ({
+        id: idx + 1,
+        section: subject,
+        question: q.question,
+        options: q.options,
+        correct: q.correctAnswer,
+        timeLimit: 30
+      }));
+
+      setQuizQuestions(formattedQuestions);
+      setQuizReady(true);
+    } catch (err) {
+      console.error("Quiz generation failed:", err);
+      alert("AI Generation failed. Check API key or connection.");
+    } finally {
+      setIsGenerating(false);
     }
+  };
+
+  const handleStartQuiz = () => {
+    if (!quizReady || quizQuestions.length === 0) {
+      alert("Please generate a quiz first!");
+      return;
+    }
+    
+    setQuizActive(true);
+    setCurrentQuestionIndex(0);
+    setTimeRemaining(30);
+    setQuizResults([]);
+    setCurrentQuestionResponses(0);
+
+    socket.emit("start-quiz", {
+      roomCode: room.id,
+      quizData: {
+        title: `${subject} Quiz`,
+        questions: quizQuestions,
+      },
+      currentQuestion: quizQuestions[0],
+      timeRemaining: 30,
+    });
   };
 
   // Timer effect for quiz questions - Host controls timer locally
@@ -340,13 +277,14 @@ const LiveRoomHost = () => {
   useEffect(() => {
     socket.on("answer-submitted", (data) => {
       if (room && data.roomCode === room.id) {
-        console.log("📥 Answer received:", data);
+        console.log("📥 Answer received and processed in LiveRoomHost:", data);
         
         // Simple response counter increment
         setCurrentQuestionResponses(prev => prev + 1);
         
         // Add to results for tracking
         setQuizResults((prev) => [...prev, data.answer]);
+
 
         console.log("📊 Answer tracking:", {
           questionIndex: currentQuestionIndex,
@@ -1012,10 +950,76 @@ const LiveRoomHost = () => {
               </div>
 
               {/* Start Quiz */}
-              {room.participants?.length > 0 && (
+              {room.participants?.length > 0 && !quizActive && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                          Quiz_Subject
+                        </label>
+                        <input
+                          type="text"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          placeholder="e.g. Physics, History..."
+                          className="w-full bg-slate-50 border border-slate-200 p-4 text-sm font-bold focus:border-indigo-600 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                          Difficulty
+                        </label>
+                        <select
+                          value={difficulty}
+                          onChange={(e) => setDifficulty(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 p-4 text-sm font-bold focus:border-indigo-600 outline-none transition-all"
+                        >
+                          <option>Easy</option>
+                          <option>Medium</option>
+                          <option>Hard</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="bg-indigo-50 border border-indigo-100 p-6 flex flex-col justify-center items-center text-center">
+                       {quizReady ? (
+                         <>
+                           <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
+                             <span className="text-xl">✓</span>
+                           </div>
+                           <h4 className="text-xs font-black uppercase tracking-widest text-green-700">Quiz_Ready</h4>
+                           <p className="text-[10px] text-green-600 mt-1">{quizQuestions.length} Questions Generated</p>
+                           <button 
+                            onClick={() => setQuizReady(false)}
+                            className="text-[8px] font-black uppercase tracking-widest text-indigo-600 mt-3 underline"
+                           >
+                             Regenerate
+                           </button>
+                         </>
+                       ) : (
+                         <>
+                            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-3 animate-pulse">
+                              <span className="text-xl">AI</span>
+                            </div>
+                            <h4 className="text-xs font-black uppercase tracking-widest text-indigo-700 italic">Generate_AI_Quiz</h4>
+                            <p className="text-[10px] text-indigo-600 mt-1 mb-4">Leverage Gemini to create specialized questions</p>
+                            <button
+                              onClick={handleGenerateAIQuiz}
+                              disabled={isGenerating}
+                              className="px-6 py-2 bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 disabled:opacity-50 transition-all shadow-[4px_4px_0px_0px_rgba(79,70,229,0.2)]"
+                            >
+                              {isGenerating ? "GENERATING..." : "BUILD_QUIZ_NOW"}
+                            </button>
+                         </>
+                       )}
+                    </div>
+                  </div>
+              )}
+
+              {room.participants?.length > 0 && !quizActive && (
                 <button
                   onClick={handleStartQuiz}
-                  className="w-full py-4 bg-green-600 text-white font-bold text-sm uppercase tracking-widest hover:bg-green-500 transition-all shadow-[4px_4px_0px_0px_rgba(34,197,94,0.3)] hover:shadow-none"
+                  disabled={!quizReady || isGenerating}
+                  className="w-full py-4 bg-green-600 text-white font-bold text-sm uppercase tracking-widest hover:bg-green-500 transition-all shadow-[4px_4px_0px_0px_rgba(34,197,94,0.3)] hover:shadow-none disabled:opacity-50"
                 >
                   Start_Assessment
                 </button>

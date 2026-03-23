@@ -2,15 +2,22 @@ const express = require("express");
 const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const key = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : "";
+console.log("🔍 Gemini API Key loaded. Length:", key.length);
+if (key) {
+  console.log("🔍 Key starts/ends with:", key.substring(0, 4) + "..." + key.substring(key.length - 4));
+}
+const genAI = new GoogleGenerativeAI(key);
+
 
 router.post("/generate-quiz", async (req, res) => {
   try {
     const { subject, difficulty, questionCount, questionTypes } = req.body;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
+      model: "gemini-pro"
     });
+
 
     const prompt = `
 You are a quiz generator.
@@ -40,10 +47,20 @@ Return ONLY JSON in this format:
 `;
 
     const result = await model.generateContent(prompt);
-    const response = result.response.text();
+    const responseText = result.response.text();
+    let cleanedResponse = responseText.trim();
+    
+    if (cleanedResponse.startsWith("```json")) {
+      cleanedResponse = cleanedResponse.replace(/^```json/, "").replace(/```$/, "");
+    } else if (cleanedResponse.startsWith("```")) {
+      cleanedResponse = cleanedResponse.replace(/^```/, "").replace(/```$/, "");
+    }
+    
+    const jsonStart = cleanedResponse.indexOf("{");
+    const jsonEnd = cleanedResponse.lastIndexOf("}");
+    const json = JSON.parse(cleanedResponse.slice(jsonStart, jsonEnd + 1));
 
-    const jsonStart = response.indexOf("{");
-    const json = JSON.parse(response.slice(jsonStart));
+
 
     res.json(json);
 

@@ -37,7 +37,7 @@ const Signin = () => {
       });
 
       if (response.success) {
-        navigate("/dashboard");
+        navigate("/");
       } else {
         setError(response.message || "REGISTRATION_FAILED");
       }

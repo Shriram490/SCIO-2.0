@@ -1,6 +1,6 @@
 const express = require('express');
 const authRoutes = require('./auth');
-const aiQuiz = require('../../routes/aiQuiz');
+const aiQuiz = require('./quizRoutes');
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
 router.use('/auth', authRoutes);
 
 // AI Quiz routes
-router.use('/ai-quiz', aiQuiz);
+router.use('/quiz', aiQuiz);
 
 // User profile routes
 router.get('/user/profile', (req, res) => {

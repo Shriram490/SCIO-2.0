@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
     trim: true,
-    default: 'user_' + Date.now()
+    default: () => 'user_' + Date.now()
   },
   email: {
     type: String,
@@ -65,19 +65,18 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
   // Only run this function if password was modified
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
   
   try {
     // Hash the password with cost of 12
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
   } catch (error) {
-    return next(error);
+    throw error;
   }
 });
 
