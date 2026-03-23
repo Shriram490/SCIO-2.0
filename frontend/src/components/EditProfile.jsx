@@ -74,7 +74,9 @@ const EditProfile = () => {
     e.preventDefault();
     setLoading(true);
 
+    console.log("Sending profile update with token starts with:", localStorage.getItem('token')?.substring(0, 10));
     try {
+
       const response = await updateProfile({
         name: formData.name,
         email: formData.email,
@@ -131,13 +133,17 @@ const EditProfile = () => {
             // SYSTEM.PROFILE.EDIT //
           </span>
         </div>
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="px-6 py-2.5 bg-slate-100 text-slate-600 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
-        >
-          Return Home
-        </button>
+        <div className="flex gap-2">
+         
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="px-6 py-2.5 bg-slate-100 text-slate-600 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
+          >
+            Return Home
+          </button>
+        </div>
       </header>
+
 
       {/* Main Form Display */}
       <main className="relative z-10 flex-1 flex flex-col items-center p-8 lg:p-16">

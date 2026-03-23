@@ -1,12 +1,11 @@
+require('dotenv').config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const connectDB = require("./config/database");
 const appRoutes = require("./routes/appRoutes");
 
-dotenv.config();
 
 // Set default environment variables if not set
 process.env.PORT = process.env.PORT || '5000';
@@ -361,14 +360,12 @@ io.on("connection", (socket) => {
 
     quizState.answers.push(answerData);
 
-    // Notify host about answer submission
-    const host = room.participants.find(p => p.role === 'host');
-    if (host) {
-      io.to(host.id).emit("answer-submitted", {
-        roomCode,
-        answer: answerData
-      });
-    }
+    // Notify all participants (especially the host) about answer submission
+    io.to(roomCode).emit("answer-submitted", {
+      roomCode,
+      answer: answerData
+    });
+
 
     // Check if all participants have answered (excluding host)
     const participantCount = room.participants.filter(p => p.role !== 'host').length;

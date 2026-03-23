@@ -1,5 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+
+const getSecret = () => (process.env.JWT_SECRET || '').trim();
+
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
@@ -7,12 +10,16 @@ const router = express.Router();
 
 // Generate JWT token
 const generateToken = (userId) => {
+  const secret = getSecret();
+  
   return jwt.sign(
     { id: userId },
-    process.env.JWT_SECRET,
+    secret,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
+
+
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -51,8 +58,7 @@ router.post('/register', async (req, res) => {
     let username = email.split('@')[0];
     console.log('Generated username:', username);
 
-    // Clean up any existing users with null username
-    await User.deleteMany({ username: null });
+
 
     // Ensure username is unique
     let usernameExists = await User.findOne({ username });
